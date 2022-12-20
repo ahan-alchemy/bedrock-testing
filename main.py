@@ -8,12 +8,13 @@ LEGACY_LAST_BLOCKHASH = '0x019caf8d6982506581455df287f64b2d612cec6797325c87a51c6
 LEGACY_LAST_BLOCKNUMBER = 3324763
 
 
-def json_rpc(method, params, legacy):
+def json_rpc(self, method, params, legacy):
     headers = {'Content-Type': 'application/json'}
     data = {'method': method, 'params': params, 'id': 1, 'jsonrpc': '2.0'}
-    print(data)
     res = requests.post(LEGACY_URL if legacy else BEDROCK_URL, headers=headers, json=data, timeout=10)
     print(res.json())
+    # assert 200
+    self.assertEqual(200, res.status_code)
     return res.json()
 
 
@@ -28,8 +29,8 @@ def dec_to_hex(dec):
 # Tests to compare calls hitting bedrock and legacy clusters directly
 class TestCompareEthCalls(unittest.TestCase):
     def test_eth_getBlockByNumber__genesis(self):
-        bedrock_json = json_rpc('eth_getBlockByNumber', ['0x0', False], legacy=False)
-        legacy_json = json_rpc('eth_getBlockByNumber', ['0x0', False], legacy=True)
+        bedrock_json = json_rpc(self, 'eth_getBlockByNumber', ['0x0', False], legacy=False)
+        legacy_json = json_rpc(self, 'eth_getBlockByNumber', ['0x0', False], legacy=True)
 
         self.assertIn('hash', bedrock_json['result'])
         self.assertIn('hash', legacy_json['result'])
@@ -39,8 +40,8 @@ class TestCompareEthCalls(unittest.TestCase):
         self.assertEqual(bedrock_json, legacy_json)
 
     def test_eth_getBlockByNumber__pre_fork(self):
-        bedrock_json = json_rpc('eth_getBlockByNumber', [str(dec_to_hex(LEGACY_LAST_BLOCKNUMBER)), False], legacy=False)
-        legacy_json = json_rpc('eth_getBlockByNumber', [str(dec_to_hex(LEGACY_LAST_BLOCKNUMBER)), False], legacy=True)
+        bedrock_json = json_rpc(self, 'eth_getBlockByNumber', [str(dec_to_hex(LEGACY_LAST_BLOCKNUMBER)), False], legacy=False)
+        legacy_json = json_rpc(self, 'eth_getBlockByNumber', [str(dec_to_hex(LEGACY_LAST_BLOCKNUMBER)), False], legacy=True)
 
         self.assertIn('hash', bedrock_json['result'])
         self.assertIn('hash', legacy_json['result'])
@@ -50,8 +51,8 @@ class TestCompareEthCalls(unittest.TestCase):
         self.assertEqual(bedrock_json, legacy_json)
 
     def test_eth_getBlockByNumber__post_fork(self):
-        bedrock_json = json_rpc('eth_getBlockByNumber', [str(dec_to_hex(LEGACY_LAST_BLOCKNUMBER + 1)), False], legacy=False)
-        legacy_json = json_rpc('eth_getBlockByNumber', [str(dec_to_hex(LEGACY_LAST_BLOCKNUMBER + 1)), False], legacy=True)
+        bedrock_json = json_rpc(self, 'eth_getBlockByNumber', [str(dec_to_hex(LEGACY_LAST_BLOCKNUMBER + 1)), False], legacy=False)
+        legacy_json = json_rpc(self, 'eth_getBlockByNumber', [str(dec_to_hex(LEGACY_LAST_BLOCKNUMBER + 1)), False], legacy=True)
         # legacy will not have the data but bedrock will
         self.assertIsNone(legacy_json['result'])
         self.assertIn('hash', bedrock_json['result'])
@@ -62,35 +63,35 @@ class TestCompareEthCalls(unittest.TestCase):
     be routed to op-legacy so these pre-fork calls WILL be re-routed
     """
     def test_debug_traceBlockByNumber__genesis(self):
-        bedrock_json = json_rpc('debug_traceBlockByNumber', ['0x0', {'tracer': 'callTracer'}], legacy=False)
-        legacy_json = json_rpc('debug_traceBlockByNumber', ['0x0', {'tracer': 'callTracer'}], legacy=True)
+        bedrock_json = json_rpc(self, 'debug_traceBlockByNumber', ['0x1', {'tracer': 'callTracer'}], legacy=False)
+        legacy_json = json_rpc(self, 'debug_traceBlockByNumber', ['0x1', {'tracer': 'callTracer'}], legacy=True)
         # both will be equal
-        self.assertTrue(bedrock_json['result'])
-        self.assertTrue(legacy_json['result'])
+        self.assertIn('result', bedrock_json)
+        self.assertIn('result', legacy_json)
 
     def test_debug_traceBlockByNumber__pre_fork(self):
-        bedrock_json = json_rpc('debug_traceBlockByNumber', [str(dec_to_hex(LEGACY_LAST_BLOCKNUMBER)), {'tracer': 'callTracer'}], legacy=False)
-        legacy_json = json_rpc('debug_traceBlockByNumber', [str(dec_to_hex(LEGACY_LAST_BLOCKNUMBER)), {'tracer': 'callTracer'}], legacy=True)
+        bedrock_json = json_rpc(self, 'debug_traceBlockByNumber', [str(dec_to_hex(LEGACY_LAST_BLOCKNUMBER)), {'tracer': 'callTracer'}], legacy=False)
+        legacy_json = json_rpc(self, 'debug_traceBlockByNumber', [str(dec_to_hex(LEGACY_LAST_BLOCKNUMBER)), {'tracer': 'callTracer'}], legacy=True)
         # both will be equal
         self.assertTrue(bedrock_json['result'])
         self.assertTrue(legacy_json['result'])
 
     def test_debug_traceBlockByNumber__post_fork(self):
-        bedrock_json = json_rpc('debug_traceBlockByNumber', [str(dec_to_hex(LEGACY_LAST_BLOCKNUMBER + 1)), {'tracer': 'callTracer'}], legacy=False)
-        legacy_json = json_rpc('debug_traceBlockByNumber', [str(dec_to_hex(LEGACY_LAST_BLOCKNUMBER + 1)), {'tracer': 'callTracer'}], legacy=True)
+        bedrock_json = json_rpc(self, 'debug_traceBlockByNumber', [str(dec_to_hex(LEGACY_LAST_BLOCKNUMBER + 1)), {'tracer': 'callTracer'}], legacy=False)
+        legacy_json = json_rpc(self, 'debug_traceBlockByNumber', [str(dec_to_hex(LEGACY_LAST_BLOCKNUMBER + 1)), {'tracer': 'callTracer'}], legacy=True)
         # legacy will not have the data but bedrock will
-        self.assertFalse(legacy_json['result'])
-        self.assertTrue(bedrock_json['result'])
+        self.assertIn('result', bedrock_json)
+        self.assertNotIn('result', legacy_json)
 
 
 # All responses from op-legacy for these calls should be static
 class TestLegacyEthCalls(unittest.TestCase):
     def test_eth_blockNumber(self):
-        res_json = json_rpc('eth_blockNumber', [], legacy=True)
+        res_json = json_rpc(self, 'eth_blockNumber', [], legacy=True)
         self.assertEqual(LEGACY_LAST_BLOCKNUMBER, hex_to_dec(res_json['result']))
 
     def test_eth_syncing(self):
-        res_json = json_rpc('eth_syncing', [], legacy=True)
+        res_json = json_rpc(self, 'eth_syncing', [], legacy=True)
         self.assertFalse(res_json['result'])
 
 
