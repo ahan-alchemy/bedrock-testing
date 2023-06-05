@@ -1,11 +1,11 @@
 import requests
 import unittest
 
-BEDROCK_URL = 'http://internal-Opt-Bdrkrehearse-Bdrk-Arch-stg-a-959537455.us-east-1.elb.amazonaws.com:8545'
-LEGACY_URL = 'http://internal-Opt-Bdrkrehearse-Legacy-Arch-stg-1316927679.us-east-1.elb.amazonaws.com:8545'
+BEDROCK_URL = 'http://internal-Opt-Goer-Bedrock-Arch-prod-alb-701384941.us-east-1.elb.amazonaws.com:8545'
+LEGACY_URL = 'http://internal-Opt-Goer-Legacy-Arch-prod-alb-188237485.us-east-1.elb.amazonaws.com:8545'
 GENESIS_BLOCKHASH = '0xc1fc15cd51159b1f1e5cbc4b82e85c1447ddfa33c52cf1d98d14fba0d6354be1'
-LEGACY_LAST_BLOCKHASH = '0x019caf8d6982506581455df287f64b2d612cec6797325c87a51c6a634299a430'
-LEGACY_LAST_BLOCKNUMBER = 3324763
+LEGACY_LAST_BLOCKHASH = '0x31267a44f1422f4cab59b076548c075e79bd59e691a23fbce027f572a2a49dc9'
+LEGACY_LAST_BLOCKNUMBER = 4061223
 
 
 def json_rpc(self, method, params, legacy):
@@ -56,7 +56,7 @@ class TestCompareEthCalls(unittest.TestCase):
         # legacy will not have the data but bedrock will
         self.assertIsNone(legacy_json['result'])
         self.assertIn('hash', bedrock_json['result'])
-        self.assertEqual('0xcae42e6f83ffc8c6dfdae003eb2ed65f6c4b2c27f5629b1dea2be6857cccb342', bedrock_json['result']['hash'])
+        self.assertEqual('0x0f783549ea4313b784eadd9b8e8a69913b368b7366363ea814d7707ac505175f', bedrock_json['result']['hash'])
 
     """
     Only requests for historical execution (e.g., debug_traceTransaction) will 
